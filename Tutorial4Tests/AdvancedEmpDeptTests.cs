@@ -9,7 +9,7 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        decimal? maxSalary = null; 
+        decimal? maxSalary = emps.Max(emp => emp.Sal);
 
         Assert.Equal(5000, maxSalary);
     }
@@ -21,7 +21,9 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        decimal? minSalary = null;
+        decimal? minSalary = emps
+            .Where(emp => emp.DeptNo == 30)
+            .Min(emp => emp.Sal);
 
         Assert.Equal(1250, minSalary);
     }
@@ -33,10 +35,13 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var firstTwo = null; 
-        //
-        // Assert.Equal(2, firstTwo.Count);
-        // Assert.True(firstTwo[0].HireDate <= firstTwo[1].HireDate);
+        var firstTwo = emps
+            .OrderBy(emp => emp.HireDate) // Asc by default
+            .Take(2) // takes two first rows
+            .ToList();
+
+        Assert.Equal(2, firstTwo.Count);
+        Assert.True(firstTwo[0].HireDate <= firstTwo[1].HireDate);
     }
 
     // 14. DISTINCT job titles
@@ -46,10 +51,13 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var jobs = null; 
-        //
-        // Assert.Contains("PRESIDENT", jobs);
-        // Assert.Contains("SALESMAN", jobs);
+        var jobs = emps
+            .Select(emp => emp.Job)
+            .Distinct()
+            .ToList();
+
+        Assert.Contains("PRESIDENT", jobs);
+        Assert.Contains("SALESMAN", jobs);
     }
 
     // 15. Employees with managers (NOT NULL Mgr)
@@ -59,9 +67,10 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var withMgr = null; 
-        //
-        // Assert.All(withMgr, e => Assert.NotNull(e.Mgr));
+        var withMgr = emps
+            .Where(emp => emp.Mgr != null);
+
+        Assert.All(withMgr, e => Assert.NotNull(e.Mgr));
     }
 
     // 16. All employees earn more than 500
@@ -71,9 +80,10 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.True(result);
+        var result = emps
+            .Where(emp => emp.Sal > 500);
+
+        Assert.All(result, r => Assert.True(r.Sal > 500));
     }
 
     // 17. Any employee with commission over 400
@@ -83,9 +93,12 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.True(result);
+        var result = emps
+            .Where(emp => emp.Comm > 400)
+            .ToList();
+
+        Assert.True(result.Any()); // Check's for at least one result
+        Assert.All(result, r => Assert.True(r.Sal > 400)); // It's too similar to 16. to be correct
     }
 
     // 18. Self-join to get employee-manager pairs
@@ -95,8 +108,9 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null;
-        //
+        // var result = emps.Join(emps, emp => emp.Mgr, mgr => mgr.EmpNo);
+
+
         // Assert.Contains(result, r => r.Employee == "SMITH" && r.Manager == "FORD");
     }
 
