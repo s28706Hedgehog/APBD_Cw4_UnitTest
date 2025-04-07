@@ -9,7 +9,7 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        List<Emp> result = null; 
+        List<Emp> result = emps.Where(emp => emp.Job.Equals("SALESMAN")).ToList();
 
         Assert.Equal(2, result.Count);
         Assert.All(result, e => Assert.Equal("SALESMAN", e.Job));
@@ -22,7 +22,7 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        List<Emp> result = null; 
+        List<Emp> result = emps.Where(emp => emp.DeptNo == 30).OrderByDescending(emp => emp.Sal).ToList();
 
         Assert.Equal(2, result.Count);
         Assert.True(result[0].Sal >= result[1].Sal);
@@ -36,7 +36,12 @@ public class EmpDeptSalgradeTests
         var emps = Database.GetEmps();
         var depts = Database.GetDepts();
 
-        List<Emp> result = null; 
+        var chicagoDepts = depts
+            .Where(dept => dept.Loc.Equals("CHICAGO"))
+            .Select(dept => dept.DeptNo) // Otherwise list below expects Dept
+            .ToList();
+
+        List<Emp> result = emps.Where(emp => chicagoDepts.Contains(emp.DeptNo)).ToList();
 
         Assert.All(result, e => Assert.Equal(30, e.DeptNo));
     }
@@ -48,13 +53,15 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        //var result = null; 
-        
-        // Assert.All(result, r =>
-        // {
-        //     Assert.False(string.IsNullOrWhiteSpace(r.EName));
-        //     Assert.True(r.Sal > 0);
-        // });
+        // https://stackoverflow.com/questions/1202981/select-multiple-fields-from-list-in-linq
+        var result = emps
+            .Select(emp => new { emp.EName, emp.Sal });
+
+        Assert.All(result, r =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(r.EName));
+            Assert.True(r.Sal > 0);
+        });
     }
 
     // 5. JOIN Emp to Dept
@@ -65,9 +72,15 @@ public class EmpDeptSalgradeTests
         var emps = Database.GetEmps();
         var depts = Database.GetDepts();
 
-        //var result = null; 
+        //  https://learn.microsoft.com/pl-pl/dotnet/csharp/linq/standard-query-operators/join-operations
+        var result = emps
+            .Join(depts, emp => emp.DeptNo, dept => dept.DeptNo,
+                (emp, dept) => new
+                {
+                    emp.EName, dept.DName
+                });
 
-        //Assert.Contains(result, r => r.DName == "SALES" && r.EName == "ALLEN");
+        Assert.Contains(result, r => r.DName == "SALES" && r.EName == "ALLEN");
     }
 
     // 6. Group by DeptNo
@@ -77,9 +90,16 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.Contains(result, g => g.DeptNo == 30 && g.Count == 2);
+        // https://stackoverflow.com/questions/7285714/linq-with-groupby-and-count
+        var result = emps
+            .GroupBy(emp => emp.DeptNo)
+            .Select(group => new
+                {
+                    DeptNo = group.Key, Count = group.Count() // Names must match -_-
+                }
+            );
+
+        Assert.Contains(result, g => g.DeptNo == 30 && g.Count == 2);
     }
 
     // 7. SelectMany (simulate flattening)
@@ -89,9 +109,13 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.All(result, r => Assert.NotNull(r.Comm));
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // Should change list of lists into flatList but there's single comm?
+        var result = emps
+            .Where(emp => emp.Comm != null)
+            .Select(emp => new { emp.EName, emp.Comm });
+
+        Assert.All(result, r => Assert.NotNull(r.Comm));
     }
 
     // 8. Join with Salgrade
@@ -102,9 +126,20 @@ public class EmpDeptSalgradeTests
         var emps = Database.GetEmps();
         var grades = Database.GetSalgrades();
 
-        // var result = null;
-        //
-        // Assert.Contains(result, r => r.EName == "ALLEN" && r.Grade == 3);
+        /*
+        var result = emps
+            .Join(grades, emp => emp.Sal, grade => grade.Losal);
+        */
+
+        // Idk how to do this with join as there's limit for parameters for join() function
+        // but I guess everything like this may be done as lambda also
+        var result =
+            from emp in emps
+            from gr in grades
+            where gr.Losal <= emp.Sal && emp.Sal <= gr.Hisal
+            select new { emp.EName, gr.Grade };
+
+        Assert.Contains(result, r => r.EName == "ALLEN" && r.Grade == 3);
     }
 
     // 9. Aggregation (AVG)
@@ -114,9 +149,14 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.Contains(result, r => r.DeptNo == 30 && r.AvgSal > 1000);
+        var result = emps
+            .GroupBy(emp => emp.DeptNo)
+            .Select(gr => new
+            {
+                DeptNo = gr.Key, AvgSal = gr.Average(emp => emp.Sal)
+            });
+
+        Assert.Contains(result, r => r.DeptNo == 30 && r.AvgSal > 1000);
     }
 
     // 10. Complex filter with subquery and join
@@ -126,8 +166,13 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.Contains("ALLEN", result);
+        var result = emps
+            .Where(emp => emp.Sal > emps
+                .Where(innerEmp => innerEmp.DeptNo == emp.DeptNo)
+                .Average(innerEmp => innerEmp.Sal)
+            )
+            .Select(emp => emp.EName);
+
+        Assert.Contains("ALLEN", result);
     }
 }
