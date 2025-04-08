@@ -1,7 +1,16 @@
+using Xunit.Abstractions;
+
 namespace Tutorial3Tests;
 
 public class AdvancedEmpDeptTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public AdvancedEmpDeptTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
     // 11. MAX salary
     // SQL: SELECT MAX(Sal) FROM Emp;
     [Fact]
@@ -9,7 +18,8 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        decimal? maxSalary = emps.Max(emp => emp.Sal);
+        decimal? maxSalary = emps
+            .Max(emp => emp.Sal);
 
         Assert.Equal(5000, maxSalary);
     }
@@ -108,10 +118,32 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var result = emps.Join(emps, emp => emp.Mgr, mgr => mgr.EmpNo);
+        var result = emps
+            .Join(emps, emp => emp.Mgr, mgr => mgr.EmpNo,
+                (emp, mgr) => new
+                {
+                    Employee = emp.EName,
+                    Manager = mgr.EName
+                })
+            .ToList();
 
+        /*
+        // Old one, got exception using .First()
+        var result = emps
+            .Where(emp => emp.Mgr != null)
+            .Select(emp => new
+            {
+                Employee = emp.EName,
+                Manager = emps
+                    .Where(innerEmp => innerEmp.EmpNo == emp.Mgr)
+                    .Select(innerEmp => innerEmp.EName)
+                    .First()
+            })
+        .ToList(); // https://stackoverflow.com/questions/8240844/handling-warning-for-possible-multiple-enumeration-of-ienumerable
+        */
 
-        // Assert.Contains(result, r => r.Employee == "SMITH" && r.Manager == "FORD");
+        // Assert.Single(result);
+        Assert.Contains(result, r => r.Employee == "SMITH" && r.Manager == "FORD");
     }
 
     // 19. Let clause usage (sal + comm)
@@ -121,9 +153,17 @@ public class AdvancedEmpDeptTests
     {
         var emps = Database.GetEmps();
 
-        // var result = null; 
-        //
-        // Assert.Contains(result, r => r.EName == "ALLEN" && r.Total == 1900);
+        var result = emps
+            .Select(emp => new
+            {
+                EName = emp.EName,
+                Total = emp.Sal + (emp.Comm ?? 0)
+                // both are the same thing :O
+                // (emp.Comm == null ? 0 : emp.Comm)
+                // (emp.Comm ?? 0)
+            });
+
+        Assert.Contains(result, r => r.EName == "ALLEN" && r.Total == 1900);
     }
 
     // 20. Join all three: Emp → Dept → Salgrade
@@ -135,8 +175,21 @@ public class AdvancedEmpDeptTests
         var depts = Database.GetDepts();
         var grades = Database.GetSalgrades();
 
-        // var result = null; 
-        //
-        // Assert.Contains(result, r => r.EName == "ALLEN" && r.DName == "SALES" && r.Grade == 3);
+        var empDept = emps
+            .Join(depts, emp => emp.DeptNo, dept => dept.DeptNo,
+                (emp, dept) => new
+                {
+                    emp.EName,
+                    dept.DName,
+                    emp.Sal
+                });
+
+        var result =
+            from emDp in empDept
+            from gr in grades
+            where gr.Losal <= emDp.Sal && emDp.Sal <= gr.Hisal
+            select new { emDp.EName, emDp.DName, gr.Grade };
+
+        Assert.Contains(result, r => r.EName == "ALLEN" && r.DName == "SALES" && r.Grade == 3);
     }
 }

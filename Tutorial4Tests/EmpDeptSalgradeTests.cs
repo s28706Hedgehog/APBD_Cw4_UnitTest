@@ -9,7 +9,9 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        List<Emp> result = emps.Where(emp => emp.Job.Equals("SALESMAN")).ToList();
+        List<Emp> result = emps
+            .Where(emp => emp.Job.Equals("SALESMAN"))
+            .ToList();
 
         Assert.Equal(2, result.Count);
         Assert.All(result, e => Assert.Equal("SALESMAN", e.Job));
@@ -22,7 +24,10 @@ public class EmpDeptSalgradeTests
     {
         var emps = Database.GetEmps();
 
-        List<Emp> result = emps.Where(emp => emp.DeptNo == 30).OrderByDescending(emp => emp.Sal).ToList();
+        List<Emp> result = emps
+            .Where(emp => emp.DeptNo == 30)
+            .OrderByDescending(emp => emp.Sal)
+            .ToList();
 
         Assert.Equal(2, result.Count);
         Assert.True(result[0].Sal >= result[1].Sal);
@@ -41,7 +46,9 @@ public class EmpDeptSalgradeTests
             .Select(dept => dept.DeptNo) // Otherwise list below expects Dept
             .ToList();
 
-        List<Emp> result = emps.Where(emp => chicagoDepts.Contains(emp.DeptNo)).ToList();
+        List<Emp> result = emps
+            .Where(emp => chicagoDepts.Contains(emp.DeptNo))
+            .ToList();
 
         Assert.All(result, e => Assert.Equal(30, e.DeptNo));
     }
@@ -108,9 +115,8 @@ public class EmpDeptSalgradeTests
     public void ShouldReturnEmployeesWithCommission()
     {
         var emps = Database.GetEmps();
-
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // Should change list of lists into flatList but there's single comm?
+        
+        // Idk where to use SelectMany, I keep it as it is
         var result = emps
             .Where(emp => emp.Comm != null)
             .Select(emp => new { emp.EName, emp.Comm });
@@ -126,13 +132,7 @@ public class EmpDeptSalgradeTests
         var emps = Database.GetEmps();
         var grades = Database.GetSalgrades();
 
-        /*
-        var result = emps
-            .Join(grades, emp => emp.Sal, grade => grade.Losal);
-        */
-
-        // Idk how to do this with join as there's limit for parameters for join() function
-        // but I guess everything like this may be done as lambda also
+        // It's easier to write it this way for me, not sure if I'm obligated to use .Join()
         var result =
             from emp in emps
             from gr in grades

@@ -42,3 +42,4 @@ C:\Users\jerzy\Desktop\PJATK\Sem4\APBD\UnitTest\UnitTestRepo\Tutorial4\obj\Debug
 C:\Users\jerzy\Desktop\PJATK\Sem4\APBD\UnitTest\UnitTestRepo\Tutorial4\obj\Debug\net9.0\Tutorial4.pdb
 C:\Users\jerzy\Desktop\PJATK\Sem4\APBD\UnitTest\UnitTestRepo\Tutorial4\obj\Debug\net9.0\Tutorial4.genruntimeconfig.cache
 C:\Users\jerzy\Desktop\PJATK\Sem4\APBD\UnitTest\UnitTestRepo\Tutorial4\obj\Debug\net9.0\ref\Tutorial4.dll
+C:\Users\jerzy\Desktop\PJATK\Sem4\APBD\UnitTest\UnitTestRepo\Tutorial4\obj\Debug\net9.0\Tutorial4.sourcelink.json
